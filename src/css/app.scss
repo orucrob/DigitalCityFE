@@ -1,0 +1,72 @@
+#app {
+	width:100%;
+//    height: 100%;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	.chart{
+		width: 100%;
+	}
+
+}
+
+.chart{
+	.bar{
+		rect {
+			fill: #607D8B;
+		}
+		.label1, .label2{
+			fill: white;
+			font: 10px sans-serif;
+			text-anchor: middle;
+		}
+		.month {
+			font: 10px sans-serif;
+			text-anchor: middle;
+		}
+		&:hover{
+			rect{
+				fill: #FF5722;
+			}
+		}
+	}
+}
+svg.pie1 .hov{
+	path{
+		display: none;
+		&.on{
+			display: block;
+		}
+	}
+}
+.grid1, .grid2{
+	display: table;
+	font: 11px sans-serif;
+	.row{
+		display: table-row;
+		div{
+			display: table-cell;
+		}
+		&:hover{
+			background-color: #FF5722;
+		}
+		.sum, .date{
+			padding-right: 1em;
+			padding-left: 1em;
+			text-align: right;
+		}
+	}
+}
+
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
