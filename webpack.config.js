@@ -12,7 +12,7 @@ module.exports = {
     output: {
         filename: '[name].js',
         path: path.join(__dirname, './dist'),
-        publicPath: '/'
+        publicPath: ''
     },
     devtool: "source-map", // or "inline-source-map"
     module: {
