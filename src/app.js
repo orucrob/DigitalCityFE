@@ -6,7 +6,7 @@ import * as d3 from 'd3';
 const margin = {top: 20, right: 30, bottom: 30, left: 40};
 
 //let urlDF = "https://service.digimesto.sk/DmApi/fakturyDodavatelske/148/2016?format=json";
-const urlDF = "http://www.itinn.eu/dcapi/fakturyDodavatelske/148/2016?format=json";
+const urlDF = "https://itinn.eu/dcapi/fakturyDodavatelske/148/2016?format=json";
 //const urlDF = "../data/dm.json";
 const appSelector = "#app";
 
