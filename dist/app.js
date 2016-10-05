@@ -328,7 +328,6 @@
 		newRow.on('click', openGrid2).on('mouseover', pieOn).on('mouseout', pieOff);
 	}
 	function pieOn(d, i) {
-		console.log('pie on', i);
 		var c = d3.selectAll('svg.pie1 .hov .p' + i).classed('on', true).attr("fill");
 		d3.selectAll('div.grid1 .row.idx' + i).classed('selected', true).style('background', c);
 	}
@@ -338,7 +337,6 @@
 	}
 	
 	function openGrid2(data) {
-		console.log('GRID data:', data.value.detail);
 		var gridData = data.value.detail.sort(function (a, b) {
 			return d3.descending(a["SumaCelkom"], b["SumaCelkom"]);
 		});
