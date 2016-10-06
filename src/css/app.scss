@@ -8,6 +8,9 @@
 	.chart{
 		width: 100%;
 	}
+	.chartTitle{
+		width: 100%;
+	}
 
 }
 
@@ -40,7 +43,7 @@ svg.pie1 .hov{
 		}
 	}
 }
-.grid1, .grid2{
+.grid1, .grid2, .obecgrid{
 	display: table;
 	font: 11px sans-serif;
 	.row{
@@ -51,12 +54,18 @@ svg.pie1 .hov{
 		&:hover{
 			background-color: #FF5722;
 		}
-		.sum, .date{
+		.sum, .date, .id{
 			padding-right: 1em;
 			padding-left: 1em;
 			text-align: right;
 		}
 	}
+}
+
+.obecsearch{
+    width: 100%;
+    text-align: center;
+    padding: 1em;	
 }
 
 

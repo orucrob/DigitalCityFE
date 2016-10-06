@@ -1,4 +1,4 @@
-var HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const extractCSS = new ExtractTextPlugin('[name].css');
 
@@ -14,7 +14,7 @@ module.exports = {
         path: path.join(__dirname, './dist'),
         publicPath: ''
     },
-    devtool: "source-map", // or "inline-source-map"
+    devtool: "cheap-module-source-map", //"source-map", // or "inline-source-map"
     module: {
         loaders: [{
             test: /\.js$/,
