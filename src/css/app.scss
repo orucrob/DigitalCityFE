@@ -9,9 +9,19 @@
 		width: 100%;
 	}
 	.chartTitle{
+		font: 15px sans-serif;
 		width: 100%;
 	}
-
+	.error .message{
+		padding-top: 5em;
+		font: 20px sans-serif;
+		text-align: center;
+	}
+	.error .messagedetail{
+		padding-top: 1em;
+		font: 15px sans-serif;
+		text-align: center;
+	}
 }
 
 .chart{

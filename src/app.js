@@ -3,13 +3,18 @@ import 'babel-polyfill';
 import './css/app.scss';
 import * as d3 from 'd3';
 import  dataapi from './dataapi';
-import {mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash} from './util';
+import {removeAll, on} from './util';
 import * as obec from './obec';
 import * as yw from './yearview';
+import * as err from './error';
 
 
 function init(){
-	obec.on('select', function(otag){
+	on('dataapierror', function(status, xhr){
+		removeAll();
+		err.drawError(status, xhr);
+	});
+	on('obecselect', function(otag){
 		obec.removeAll();
 		yw.drawApp(otag);
 	});

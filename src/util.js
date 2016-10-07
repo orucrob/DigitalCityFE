@@ -19,7 +19,9 @@ export function dd(n){
 	return n>9 ? n : "0"+n; 
 };
 
-
+export function removeAll(){
+	d3.select(appSelector).selectAll().remove();
+}
 export function selectRoot(elem, cls){
 	var sel = d3.select(appSelector).selectAll(elem+'.'+cls).data([1]);
 	sel.exit().remove();
@@ -72,3 +74,18 @@ export function saveToHash(key, value){
 	window.location.hash = h;
 }
 
+//global (util) events
+let listeners = {};
+export function on(event, calback){
+	listeners[event] = listeners[event] || [];
+	listeners[event].push(calback);
+}
+export function fire(event, argsArr){
+	let evLis = listeners[event];
+	var me = this;
+	if(evLis && evLis.length>0){
+		evLis.forEach(function(evL){
+			evL.apply(me, argsArr);
+		});
+	}
+}

@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import  dataapi from './dataapi';
-import {mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash} from './util';
+import {mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash} from './util';
 import * as obec from './obec';
 
 
@@ -28,17 +28,29 @@ function prepareData(json){
 			keys: keys,
 		};
 }
-export async function drawApp(otag){
+export async function drawApp(otag, year){
 	otag = otag || getHash()['o'];
+	year = year || getHash()['y'] || new Date().getFullYear();
 
 	let orgRec = await obec.getOrgRec(otag),
 		orgId = orgRec && orgRec['OrganizaciaId'];
 
 	if(orgId){
-		d3.json(dataapi.faDod(orgId,'2016'), function (json) {
-		    let chartData = prepareData(json);
-		    drawChart(chartData , orgRec);
-		    d3.select(window).on('resize', function(){drawChart(chartData);});
+		d3.json(dataapi.faDod(orgId, year), function (json) {
+		    if(json){
+			    let chartData = prepareData(json);
+			    drawChart(chartData , orgRec, year);
+			    //TODO be sure, that resize is listented only once
+			    d3.select(window).on('resize', function(){
+			    	drawChart(chartData, orgRec, year);
+			    });
+		    }else{
+		    	//TOOD remove chart and grids
+		    }
+		}).on('error', function(ev){
+			let xhr = ev.srcElement,
+				status = xhr.status;
+			fire('dataapierror', [status, xhr]);
 		});
 	}else{
 		obec.draw();
@@ -46,7 +58,7 @@ export async function drawApp(otag){
 
 }
 
-function drawChart(chartData, obecRec){
+function drawChart(chartData, obecRec, year){
 	    let data = chartData.data,
 	    	keys = chartData.keys;
 	    obecRec = obecRec || {};
@@ -68,7 +80,39 @@ function drawChart(chartData, obecRec){
 		var chartTitle = selectRoot('div', 'chartTitle')
 		var name = chartTitle.select('.name');
 		name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
-		name.text(`OID: ${obecRec["OrganizaciaId"]} Title: ${obecRec["HashTag"]} (${obecRec["Nazov"]})`);
+		name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}) - Year: `);
+		var yearSel = name.select('select');
+		yearSel = yearSel.empty() ? name.append('select') : yearSel;
+		yearSel.selectAll('option').remove();
+		yearSel.append('option').text(''+year);
+		yearSel.on('change', function(){
+			try{
+				let newY = parseInt(this.value, 10);
+				if(year != newY){
+					saveToHash('y', newY);
+					drawApp();
+				}
+			}catch(e){
+				console.log('error: wrong id for year: '+ this.value, e);
+			}
+		});
+
+		d3.json(dataapi.faDodYears(obecRec["OrganizaciaId"]), function (json) {
+		    if(json && json.Data){
+		    	console.log('json', json, yearSel);
+		    	let opt = yearSel.selectAll('option').data(json.Data);
+		    	opt.enter().append('option').merge(opt)
+		    		.attr("id", function(d){return d["id"];})
+		    		.text(function(d){return d["rok"]})
+		    		.attr('selected', function(d){ return  year == d["id"] ? true : null});
+		    	opt.exit().remove();
+		    }
+		}).on('error', function(ev){
+			let xhr = ev.srcElement,
+				status = xhr.status;
+			fire('dataapierror', [status, xhr]);
+		});
+
 
 	    //setup chart
 		var chart = selectRoot('svg', 'chart')
@@ -82,10 +126,11 @@ function drawChart(chartData, obecRec){
 		}
     	chart.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 	    
-    	chart.append("g")
-    		.attr("class", "x axis")
-    		.attr("transform", "translate(0," + height + ")")
-    		.call(xAxis);
+    	var axisG = chart.selectAll("g.x.axis");
+    	if(axisG.empty()){
+	    	axisG = chart.append("g").attr("class", "x axis");
+    	}
+    	axisG.attr("transform", "translate(0," + height + ")").call(xAxis);
 
 
     	//update
@@ -130,6 +175,10 @@ function drawChart(chartData, obecRec){
 		    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
 		    .attr("dy", ".75em")
 		    .html(function(d) { return "#"+d.value.count ; });
+
+		//remove
+		bar.exit().remove(); 	
+
 
 }
 
@@ -267,36 +316,3 @@ function openGrid2(data){
 	newRow.append("div").attr("class","subject").text(function(d,i){return d["Predmet"];});
 }
 
-
-//     // Define responsive behavior
-// function resize() {
-//       var width = parseInt(d3.select("#chart").style("width")) - margin.left - margin.right,
-//       height = parseInt(d3.select("#chart").style("height")) - margin.top - margin.bottom;
-
-//       // Update the range of the scale with new width/height
-//       xScale.range([0, width]);
-//       yScale.range([height, 0]);
-
-//       // Update the axis and text with the new scale
-//       svg.select('.x.axis')
-//         .attr("transform", "translate(0," + height + ")")
-//         .call(xAxis);
-
-//       svg.select('.y.axis')
-//         .call(yAxis);
-
-//       // Force D3 to recalculate and update the line
-//       svg.selectAll('.line')
-//         .attr("d", function(d) { return line(d.datapoints); });
-
-//       // Update the tick marks
-//       xAxis.ticks(Math.max(width/75, 2));
-//       yAxis.ticks(Math.max(height/50, 2));
-
-//     };
-
-//     // Call the resize function whenever a resize event occurs
-//     d3.select(window).on('resize', resize);
-
-//     // Call the resize function
-//     resize();

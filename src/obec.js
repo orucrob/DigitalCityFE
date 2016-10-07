@@ -1,28 +1,46 @@
 import * as d3 from 'd3';
 import  dataapi from './dataapi';
-import {saveToHash, selectRoot} from './util';
+import {saveToHash, selectRoot, fire} from './util';
 
 
 let data = undefined;
 
 export async function draw(){
 	let d = await getData();
-	drawSerchBox(d);
-	drawTable(d);
+	if(d && d.length>0){
+		drawSerchBox(d);
+		drawTable(d);
+	}else{
+		//TODO no data
+	}
 }
 
 export async function getData(){
-	if(!data){
-		data = loadData();
+	try{
+		if(!data){
+			data = loadData();
+		}
+		return await data;
+	}catch(e){
+		//cannot get data
+		return undefined;
 	}
-	return await data;
 } 
 
 function loadData(){
 	return new Promise(function(resolve, reject){
 		d3.json(dataapi.organizacie(), function (json) {
-		    resolve(json.Data);
-		});//TODO reject
+		    if(!json){
+		    	console.log('noJson',arguments);
+		    	reject(json);
+		    }else{
+			    resolve(json.Data);
+		    }
+		}).on('error', function(ev){
+			let xhr = ev.srcElement,
+				status = xhr.status;
+			fire('dataapierror', [status, xhr]);
+		});
 	});
 }
 function drawSerchBox(data){
@@ -68,7 +86,7 @@ export function drawTable(data){
 
 	newRow.on('click', function(d,i){
 		saveToHash('o', d["HashTag"]);
-		fire('select', [d["HashTag"], d]);
+		fire('obecselect', [d["HashTag"], d]);
 	});
 }
 
@@ -77,20 +95,7 @@ export function removeAll(){
 	d3.select('div.obecsearch').remove();
 }
 
-let listeners = {};
-export function on(event, calback){
-	listeners[event] = listeners[event] || [];
-	listeners[event].push(calback);
-}
-function fire(event, argsArr){
-	let evLis = listeners[event];
-	var me = this;
-	if(evLis && evLis.length>0){
-		evLis.forEach(function(evL){
-			evL.apply(me, argsArr);
-		});
-	}
-}
+
 
 export async function getOrgRec(oTag){
 	if(!oTag) return;
