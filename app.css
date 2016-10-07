@@ -1,2 +1,69 @@
-#app{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center}#app,#app .chart,#app .chartTitle{width:100%}.chart .bar rect{fill:#607d8b}.chart .bar .label1,.chart .bar .label2{fill:#fff;font:10px sans-serif;text-anchor:middle}.chart .bar .month{font:10px sans-serif;text-anchor:middle}.chart .bar:hover rect{fill:#ff5722}svg.pie1 .hov path{display:none}svg.pie1 .hov path.on{display:block}.grid1,.grid2,.obecgrid{display:table;font:11px sans-serif}.grid1 .row,.grid2 .row,.obecgrid .row{display:table-row}.grid1 .row div,.grid2 .row div,.obecgrid .row div{display:table-cell}.grid1 .row:hover,.grid2 .row:hover,.obecgrid .row:hover{background-color:#ff5722}.grid1 .row .date,.grid1 .row .id,.grid1 .row .sum,.grid2 .row .date,.grid2 .row .id,.grid2 .row .sum,.obecgrid .row .date,.obecgrid .row .id,.obecgrid .row .sum{padding-right:1em;padding-left:1em;text-align:right}.obecsearch{width:100%;text-align:center;padding:1em}.axis text{font:10px sans-serif}.axis line,.axis path{fill:none;stroke:#000;shape-rendering:crispEdges}
+#app {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center; }
+  #app .chart {
+    width: 100%; }
+  #app .chartTitle {
+    font: 15px sans-serif;
+    width: 100%; }
+  #app .error .message {
+    padding-top: 5em;
+    font: 20px sans-serif;
+    text-align: center; }
+  #app .error .messagedetail {
+    padding-top: 1em;
+    font: 15px sans-serif;
+    text-align: center; }
+
+.chart .bar rect {
+  fill: #607D8B; }
+
+.chart .bar .label1, .chart .bar .label2 {
+  fill: white;
+  font: 10px sans-serif;
+  text-anchor: middle; }
+
+.chart .bar .month {
+  font: 10px sans-serif;
+  text-anchor: middle; }
+
+.chart .bar:hover rect {
+  fill: #FF5722; }
+
+svg.pie1 .hov path {
+  display: none; }
+  svg.pie1 .hov path.on {
+    display: block; }
+
+.grid1, .grid2, .obecgrid {
+  display: table;
+  font: 11px sans-serif; }
+  .grid1 .row, .grid2 .row, .obecgrid .row {
+    display: table-row; }
+    .grid1 .row div, .grid2 .row div, .obecgrid .row div {
+      display: table-cell; }
+    .grid1 .row:hover, .grid2 .row:hover, .obecgrid .row:hover {
+      background-color: #FF5722; }
+    .grid1 .row .sum, .grid1 .row .date, .grid1 .row .id, .grid2 .row .sum, .grid2 .row .date, .grid2 .row .id, .obecgrid .row .sum, .obecgrid .row .date, .obecgrid .row .id {
+      padding-right: 1em;
+      padding-left: 1em;
+      text-align: right; }
+
+.obecsearch {
+  width: 100%;
+  text-align: center;
+  padding: 1em; }
+
+.axis text {
+  font: 10px sans-serif; }
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges; }
+
 /*# sourceMappingURL=app.css.map*/
