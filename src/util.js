@@ -62,6 +62,18 @@ export function getHash(){
 	}
 	return map;
 }
+export function clearFromHash(key){
+	let h="",
+		map = getHash();
+	if(map[key]){
+		delete map[key];
+		
+		for(var k in map){
+			h+=(h.length>0 ? "&":"") + k + "=" + map[k];
+		}
+		window.location.hash = h;
+	}
+}
 export function saveToHash(key, value){
 	let h="",
 		map = getHash();
@@ -73,6 +85,7 @@ export function saveToHash(key, value){
 	}
 	window.location.hash = h;
 }
+
 
 //global (util) events
 let listeners = {};

@@ -1,5 +1,10 @@
+.wrap{
+	display: flex;
+    justify-content: center;
+}
 #app {
 	width:100%;
+	max-width: 1100px;
 //    height: 100%;
 	display: flex;
 	flex-direction: row;
@@ -11,6 +16,12 @@
 	.chartTitle{
 		font: 15px sans-serif;
 		width: 100%;
+		b, select{
+			font-size: 1.5em;
+		}
+		select{
+    		font-weight: bold;
+		}
 	}
 	.error .message{
 		padding-top: 5em;
@@ -38,9 +49,14 @@
 			font: 10px sans-serif;
 			text-anchor: middle;
 		}
-		&:hover{
+		&.selected{
 			rect{
 				fill: #FF5722;
+			}
+		}
+		&:hover{
+			rect{
+				fill: #BF360C;
 			}
 		}
 	}
@@ -56,8 +72,12 @@ svg.pie1 .hov{
 .grid1, .grid2, .obecgrid{
 	display: table;
 	font: 11px sans-serif;
+	border : 1px solid #607D8B;
+	width: 50%;
+	box-sizing: border-box;
 	.row{
 		display: table-row;
+		cursor: pointer;
 		div{
 			display: table-cell;
 		}

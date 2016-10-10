@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import  dataapi from './dataapi';
-import {mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash} from './util';
+import {mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash, clearFromHash} from './util';
 import * as obec from './obec';
 
 
@@ -23,6 +23,29 @@ function prepareData(json){
 			 }).entries(json.Data);
 
 		let keys = data.map(function(v){return v["key"];});
+		
+		//add empty months
+		let updated=false;
+		for(let i=1; i<13; i++){
+			let m = ""+dd(i);
+			if(keys.indexOf(m)==-1){
+				data.push({
+					key: m,
+					value:{
+						sum: 0,
+						count:0,
+						detail:[]
+					}
+				});
+				keys.push(m);
+				updated = true;
+			}
+		}
+		if(updated){
+			keys.sort(d3.ascending);
+			data.sort(function(a, b){ return d3.ascending(a.key, b.key);});
+		}
+
 		return {
 			data: data,
 			keys: keys,
@@ -99,7 +122,7 @@ function drawChart(chartData, obecRec, year){
 
 		d3.json(dataapi.faDodYears(obecRec["OrganizaciaId"]), function (json) {
 		    if(json && json.Data){
-		    	console.log('json', json, yearSel);
+		    	//console.log('json', json, yearSel);
 		    	let opt = yearSel.selectAll('option').data(json.Data);
 		    	opt.enter().append('option').merge(opt)
 		    		.attr("id", function(d){return d["id"];})
@@ -177,15 +200,35 @@ function drawChart(chartData, obecRec, year){
 		    .html(function(d) { return "#"+d.value.count ; });
 
 		//remove
-		bar.exit().remove(); 	
+		bar.exit().remove();
+
+		//open month from hash
+		let month = +getHash()['m'];
+ 		if(month && month>0 && month<data.length){
+ 			openGrid(data[month-1], month-1, chart.selectAll('g.bar').nodes());
+ 		}else{
+ 			clearGrid();
+ 		}
 
 
 }
 
-function openGrid(data){
+function clearGrid(){
+	d3.selectAll('svg.pie1').remove();
+	d3.selectAll('div.grid1').remove();
+	clearFromHash('m');
+}
+
+function openGrid(data, idx, allBars){
+	//save month to hash
+	saveToHash("m", (idx+1)+"");
+	let width = d3.select('svg.chart').attr("width");
+	var size = width/3;
+
+	//mark selected bar
+	d3.selectAll(allBars).classed('selected', function(d, i){return i==idx;});
 	
 	var color = d3.scaleOrdinal(d3.schemeCategory20 );
-	var size = 380;
 
 
 	let gridData = d3.nest()
@@ -220,8 +263,8 @@ function openGrid(data){
 	pieSvgHover.attr('transform', 'translate(' + (size / 2) + ',' + (size / 2) + ')');
 
 
-	var r = (size-80)/2;
-	var arc = d3.arc().innerRadius(0).outerRadius(r);
+	var r = (size-100)/2;
+	var arc = d3.arc().innerRadius(r*0.5).outerRadius(r);
 	var arcOn = d3.arc().innerRadius(r).outerRadius(r + 20);
 	var pieData = d3.pie().value(function(d) { return d.value.sum;})(gridData);
 
@@ -261,7 +304,7 @@ function openGrid(data){
 	//GRID
 	var grid = selectRoot('div', 'grid1');
 
-	grid.style('border', '1px solid black');
+	//grid.style('border', '1px solid black').style('width', size+'px');
 	var row = grid.selectAll('.row')
 		.data(gridData).attr('class',function(d,i){return "row idx"+i;});
 	row.select(".col").attr('min-width', '1em').style('min-height', '1em').style('background', function(d,i){return color(i);});
