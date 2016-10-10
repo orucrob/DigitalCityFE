@@ -5,6 +5,12 @@ const appSelector = "#app";
 export function mf(isoDate){
 	return isoDate.substring(5,7);
 };
+export function yf(isoDate){
+	return isoDate.substring(0,4);
+};
+export function ymf(isoDate){
+	return yf(isoDate)+''+mf(isoDate);
+};
 export function curr(number){
 	return number.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })
 };
@@ -101,4 +107,31 @@ export function fire(event, argsArr){
 			evL.apply(me, argsArr);
 		});
 	}
+}
+
+//suppose the months are in format YYYYMM and are in ascending order
+export function getMissingMonths(months){
+	let start = months[0],
+		end = months[months.length-1],
+		year = parseInt(start.substring(0,4)),
+		month = parseInt(start.substring(4,6)),
+		endY = parseInt(end.substring(0,4)),
+		endM = parseInt(end.substring(4,6));
+
+	let missing = [];
+	if(year && month && endY && endM){
+		while(year<=endY && month<=endM){
+			if( months.indexOf(year+''+dd(month))==-1){
+				missing.push(year+''+dd(month));
+			}
+			if(month==12){
+				month = 1;
+				year++;
+			}else{
+				month++
+			}
+		}
+	}
+	return missing;
+
 }

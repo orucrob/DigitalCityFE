@@ -69,7 +69,7 @@ svg.pie1 .hov{
 		}
 	}
 }
-.grid1, .grid2, .obecgrid{
+.grid1, .obecgrid{
 	display: table;
 	font: 11px sans-serif;
 	border : 1px solid #607D8B;
@@ -88,6 +88,34 @@ svg.pie1 .hov{
 			padding-right: 1em;
 			padding-left: 1em;
 			text-align: right;
+		}
+	}
+}
+.grid2 {
+	position: absolute;
+	top:0;
+	left:0;
+	padding: 1em;
+	font: 11px sans-serif;
+	border : 1px solid white;
+	background: #607D8B;
+	color: white;	
+	.rowtitle{
+		font-weight: bold;
+		padding-bottom: 0.5em;
+	}
+	.innergrid{
+		display: table;
+		.row{
+			display: table-row;
+			div{
+				display: table-cell;
+			}
+			.sum, .date, .id{
+				padding-right: 1em;
+				padding-left: 1em;
+				text-align: right;
+			}
 		}
 	}
 }
