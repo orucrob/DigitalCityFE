@@ -1,3 +1,8 @@
+$break-large: 1000px;
+
+body{
+	overflow-y: scroll;
+}
 .wrap{
 	display: flex;
     justify-content: center;
@@ -14,13 +19,17 @@
 		width: 100%;
 	}
 	.chartTitle{
-		font: 15px sans-serif;
+		font: 12px sans-serif;
 		width: 100%;
 		b, select{
-			font-size: 1.5em;
+			font-size: 1.8em;
 		}
 		select{
     		font-weight: bold;
+		}
+		.heading{
+			font-size: 1.8em;
+    		font-variant: small-caps;
 		}
 	}
 	.error .message{
@@ -43,7 +52,18 @@
 		.label1, .label2{
 			fill: white;
 			font: 10px sans-serif;
-			text-anchor: middle;
+			writing-mode: tb;
+		}
+		@media screen and (min-width: $break-large) {
+			.label1, .label2{
+				text-anchor: middle;
+				writing-mode: lr;
+			}
+		}
+		@media screen and (max-width: $break-large) {
+			.label2{
+				display: none;
+			}
 		}
 		.month {
 			font: 10px sans-serif;

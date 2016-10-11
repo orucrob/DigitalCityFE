@@ -1,5 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const extractCSS = new ExtractTextPlugin('[name].css');
 
 const path = require('path');
@@ -23,7 +24,11 @@ module.exports = {
         }, {
             test: /\.scss$/i,
             loader: extractCSS.extract(['css?sourceMap', 'sass?sourceMap'])
-        }]
+        },{
+            test:  /\.jpe?g$|\.gif$|\.png$|\.svg$|\.woff$|\.ttf$|\.ico$/,
+            loader: 'file'
+        }
+        ]
     },
     plugins: [
         extractCSS, 
@@ -37,7 +42,10 @@ module.exports = {
                 useShortDoctype: true,
                 removeComments: true
             }
-        })
+        }),
+        new CopyWebpackPlugin([
+            { from: 'static' }
+        ])
     ],
     sassLoader: {
         includePaths: [path.resolve(__dirname, "./src/css")]

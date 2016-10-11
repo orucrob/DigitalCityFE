@@ -121,9 +121,15 @@ async function drawChart(chartData, obecRec, year){
 
 	    //setup title
 		var chartTitle = selectRoot('div', 'chartTitle')
+
+		var heading = chartTitle.select('.heading');
+		heading = heading.empty() ? chartTitle.append('div').attr('class','heading') : heading;
+		heading.text("Invoices (suppliers)");
+
 		var name = chartTitle.select('.name');
 		name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
 		name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}) - Year: `);
+
 		var yearSel = name.select('select');
 		yearSel = yearSel.empty() ? name.append('select') : yearSel;
 		yearSel.selectAll('option').remove();
@@ -172,7 +178,8 @@ async function drawChart(chartData, obecRec, year){
     	//update
 	    var bar = chart.selectAll('g.bar').data(data)
 	    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
-	   	var rect = bar.select('rect')
+
+	   	var rect = bar.select('rect').transition().duration(750)
  			.attr("x", 3)
  			.attr("y", function(d) { return height - y(d.value.sum); })
       		.attr("height", function(d) { return y(d.value.sum); })
@@ -287,13 +294,36 @@ function openGrid(data, idx, allBars){
     			return arc(i(t));
   			};
 		});
-	path.exit().remove();
+
+	var removePath = path.exit();
+	removePath.transition().duration(750).attrTween("d", function(d) {
+  			var iEnd = d3.interpolate(d.endAngle, 2 * Math.PI);
+  			var iStart = d3.interpolate(d.startAngle, 2 * Math.PI);
+  			return function(t) {
+  				d.startAngle = iStart(t);
+  				d.endAngle = iEnd(t);
+    			return arc(d);
+  			};
+		}).on('end', function(){
+			removePath.remove();
+		});
+
 	var newPath = path.enter()
 		.append('path')
-		.attr('d', arc)
+//		.attr('d', arc)
 		.attr('fill', function(d,i){return color(i);})
 		.attr('class', function(d,i){return "p"+i;});
-	newPath.each(function(d) { this._current = d; });// store the initial angles for transitions
+	newPath.transition().duration(750).attrTween("d", function(d) {
+  			var iEnd = d3.interpolate( 2 * Math.PI,d.endAngle);
+  			var iStart = d3.interpolate(2 * Math.PI, d.startAngle);
+  			this._current = d; // store the initial angles for transitions
+  			return function(t) {
+  				d.startAngle = iStart(t);
+  				d.endAngle = iEnd(t);
+    			return arc(d);
+  			};
+		});
+	//newPath.each(function(d) { this._current = d; });// store the initial angles for transitions
 	newPath.on('mouseover', pieOn)
 		.on('mouseout', pieOff);
 
@@ -348,6 +378,11 @@ function pieOff(d,i){
 
 
 let grid2;
+let grid2Height = 0;
+let grid2Width = 0;
+let bodyHeight = 0;
+let bodyWidth = 0;
+
 function openGrid2(data){
 	let gridData = data.data && data.data.value.detail || data.value.detail;
 	gridData = gridData.sort(function(a, b){ return d3.descending(a["SumaCelkom"], b["SumaCelkom"]); });
@@ -380,6 +415,11 @@ function openGrid2(data){
 	newRow.append("div").attr("class","sum").text(function(d,i){return curr(d["SumaCelkom"]);});
 	newRow.append("div").attr("class","date").text(function(d,i){return df(d["DatumZverejnenia"]);});
 	newRow.append("div").attr("class","subject").text(function(d,i){return d["Predmet"];});
+
+	grid2Height = parseInt(grid2.style('height'),10);
+	grid2Width = parseInt(grid2.style('width'),10);
+	bodyHeight = parseInt(d3.select('body').style('height'),10);
+	bodyWidth = parseInt(d3.select('body').style('width'),10);
 }
 function closeGrid2(){
 	d3.select('.grid2').remove();
@@ -389,7 +429,15 @@ function closeGrid2(){
 function movegrid(){
 	var coo = d3.mouse(d3.select('body').node());
 	if(grid2){
-		grid2.style("transform", "translate(" + (coo[0]+50) + "px," + coo[1] + "px)");
+		if(grid2Height+coo[1] > bodyHeight-20){
+			coo[1] -= grid2Height+10;
+		}
+		if(grid2Width+coo[0] > bodyWidth-70 && coo[0]- grid2Width > 50){
+			coo[0] -= grid2Width+50;
+		}else{
+			coo[0] +=50;
+		}
+		grid2.style("transform", "translate(" + (coo[0]) + "px," + coo[1] + "px)");
 	}
 }
 

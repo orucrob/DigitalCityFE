@@ -117,6 +117,11 @@ export function getMissingMonths(months){
 		month = parseInt(start.substring(4,6)),
 		endY = parseInt(end.substring(0,4)),
 		endM = parseInt(end.substring(4,6));
+	//when it's in the single year, add/check full set of months
+	if(year == endY){
+		month = 1;
+		endM = 12;
+	}
 
 	let missing = [];
 	if(year && month && endY && endM){
