@@ -9,4 +9,4 @@ Published at: https://orucrob.github.io/DigitalCityFE/
 
 Example: https://orucrob.github.io/DigitalCityFE/#o=chorvatskygrob&y=2016&m=10
 
-![Example screenshot](screenshot.png)
+![Example screenshot](static/screenshot.png)
