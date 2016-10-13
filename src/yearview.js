@@ -1,14 +1,18 @@
 import * as d3 from 'd3';
 import  dataapi from './dataapi';
-import {ymf, mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash, clearFromHash, fire, getMissingMonths} from './util';
+import {ymf, mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash, clearFromHash, fire, getMissingMonths, removeAll} from './util';
 import * as obec from './obec';
 
 
 const margin = {top: 20, right: 30, bottom: 30, left: 40};
 const color = d3.scaleOrdinal(d3.schemeCategory20 );
+let currentState = {
+	o:undefined,
+	y:undefined,
+	m:undefined
+};
 
-
-function prepareData(json){
+function prepareData(jsonData){
 	    let data = d3.nest()
 		    .key(function(d) { return ymf(d["DatumZverejnenia"]); })
 		    .sortKeys(d3.ascending)
@@ -20,7 +24,7 @@ function prepareData(json){
 					count: dd.length,
 					detail: dd
 				};
-			 }).entries(json.Data);
+			 }).entries(jsonData);
 
 		let keys = data.map(function(v){return v["key"];});
 		
@@ -48,35 +52,80 @@ function prepareData(json){
 			keys: keys,
 		};
 }
-export async function drawApp(otag, year){
+export async function drawApp(otag, year, month){
 	otag = otag || getHash()['o'];
 	year = year || getHash()['y'] || new Date().getFullYear();
+	month = month || getHash()['m'];
+	//skip if already in current state
+	if(currentState.o == otag && currentState.y == year && currentState.m == month){
+		//nothing
+	}else{
+		let orgRec = await obec.getOrgRec(otag),
+			orgId = orgRec && orgRec['OrganizaciaId'];
 
-	let orgRec = await obec.getOrgRec(otag),
-		orgId = orgRec && orgRec['OrganizaciaId'];
+		if(orgId){
+			let jsonData = await getFaDod(orgId, year);
+			if(jsonData){
+				let chartData = prepareData(jsonData);
+				await drawChart(otag, year, month, chartData , orgRec);
+				//TODO be sure, that resize is listented only once
+				d3.select(window).on('resize', function(){
+					drawChart(otag, year, month, chartData , orgRec, true);
+				});
+			}else{
+				//TODO - no data
+			}
+		}else{
+			await obec.draw();
+		}
 
-	if(orgId){
+		//update current state
+		currentState = {
+			y : year,
+			m: month,
+			o: otag
+		};
+	}
+
+
+}
+var faDods = [];
+function loadFaDod(orgId, year){
+	return new Promise(function(resolve, reject){
 		d3.json(dataapi.faDod(orgId, year), function (json) {
-		    if(json){
-			    let chartData = prepareData(json);
-			    drawChart(chartData , orgRec, year);
-			    //TODO be sure, that resize is listented only once
-			    d3.select(window).on('resize', function(){
-			    	drawChart(chartData, orgRec, year);
-			    });
+		    if(json && json.Data){
+			    resolve(json.Data);
 		    }else{
-		    	//TOOD remove chart and grids
+		    	reject(json);
 		    }
 		}).on('error', function(ev){
 			let xhr = ev.srcElement,
 				status = xhr.status;
 			fire('dataapierror', [status, xhr]);
 		});
-	}else{
-		obec.draw();
-	}
-
+	});
 }
+async function getFaDod(orgId,year){
+	var ret;
+	for(var i=0;i<faDods.length;i++){
+		if(faDods[i].o == orgId && faDods[i].y == year ){
+			ret = faDods[i].data;
+			break;
+		}
+	}
+	if(!ret){
+		ret = loadFaDod(orgId, year);
+		faDods.push({
+			o:orgId,
+			y:year,
+			data: ret
+		});
+		if(faDods.length>10){
+			faDods.shift();
+		}
+	}
+	return await ret;
+} 
 
 var years = {};
 function loadYears(orgId){
@@ -101,136 +150,149 @@ async function getYears(orgId){
 	return await years[orgId+''];
 } 
 
-async function drawChart(chartData, obecRec, year){
+async function drawChart(otag, year, month, chartData, obecRec, force){
 	    let data = chartData.data,
 	    	keys = chartData.keys;
 	    obecRec = obecRec || {};
 
-	    const appWidth = getAppWidth();
-	    const width = appWidth - margin.left - margin.right;
-	    const height = getWindowHeight()/2 - margin.top - margin.bottom;
-    	var barWidth = width / data.length;
+	    if(force || currentState.o != otag || currentState.y!=year){
 
-		var x = d3.scalePoint().domain(keys).rangeRound([0, width]).padding(.5);
-    	var y = d3.scaleLinear()
-			.domain([0, d3.max(data, function(g){return g.value.sum;})])
-    		.range([40,height]);
+		    const appWidth = getAppWidth();
+		    const width = appWidth - margin.left - margin.right;
+		    const height = getWindowHeight()/2 - margin.top - margin.bottom;
+	    	var barWidth = width / data.length;
+
+			var x = d3.scalePoint().domain(keys).rangeRound([0, width]).padding(.5);
+	    	var y = d3.scaleLinear()
+				.domain([0, d3.max(data, function(g){return g.value.sum;})])
+	    		.range([40,height]);
 
 
-    	var xAxis = d3.axisBottom(x).tickValues(keys);
+	    	var xAxis = d3.axisBottom(x).tickValues(keys);
 
-	    //setup title
-		var chartTitle = selectRoot('div', 'chartTitle')
+		    //setup title
+			var chartTitle = selectRoot('div', 'chartTitle')
 
-		var heading = chartTitle.select('.heading');
-		heading = heading.empty() ? chartTitle.append('div').attr('class','heading') : heading;
-		heading.text("Invoices (suppliers)");
+			var heading = chartTitle.select('.heading');
+			heading = heading.empty() ? chartTitle.append('div').attr('class','heading') : heading;
+			heading.text("Invoices (suppliers)");
 
-		var name = chartTitle.select('.name');
-		name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
-		name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}) - Year: `);
+			var name = chartTitle.select('.name');
+			name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
+			name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}): `);
+			name.on('click', function(){
+				fire('obecclick',[]);
+				clearFromHash('o');
+			});
 
-		var yearSel = name.select('select');
-		yearSel = yearSel.empty() ? name.append('select') : yearSel;
-		yearSel.selectAll('option').remove();
-		yearSel.append('option').text(''+year);
-		yearSel.on('change', function(){
-			let newY = parseInt(this.value, 10);
-			if(year != newY){
-				saveToHash('y', newY);
-				drawApp();
+
+			var yearDiv = chartTitle.select('.year');
+			yearDiv = yearDiv.empty() ? chartTitle.append('div').attr('class','year') : yearDiv;
+			yearDiv.html(`Year: `);
+
+
+			var yearSel = yearDiv.select('select');
+			yearSel = yearSel.empty() ? yearDiv.append('select') : yearSel;
+			yearSel.selectAll('option').remove();
+			yearSel.append('option').text(''+year);
+			yearSel.on('change', function(){
+				let newY = parseInt(this.value, 10);
+				if(year != newY){
+					saveToHash('y', newY);
+					//drawApp();
+				}
+			});
+
+
+			//update select with years
+			try{
+				let years = await getYears(obecRec["OrganizaciaId"]);
+				let opt = yearSel.selectAll('option').data(years);
+				opt.enter().append('option').merge(opt)
+					.attr("value", function(d){return d["id"];})
+					.text(function(d){return d["rok"]})
+					.attr('selected', function(d){ return  year == d["id"] ? true : null});
+				opt.exit().remove();
+			}catch(e){
+				console.log('Error: cannot set years.', e);
 			}
-		});
+
+		    //setup chart
+			var chart = selectRoot('svg', 'chart')
+		    	.attr('width', width + margin.left + margin.right)
+		    	.attr("height", height + margin.top + margin.bottom);
+			var chartG = chart.select("g.ch");
+			if(chartG.empty()){
+		    	chart = chart.append("g").attr('class','ch');
+			}else{
+				chart = chartG;
+			}
+	    	chart.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		    
+	    	var axisG = chart.selectAll("g.x.axis");
+	    	if(axisG.empty()){
+		    	axisG = chart.append("g").attr("class", "x axis");
+	    	}
+	    	axisG.attr("transform", "translate(0," + height + ")").call(xAxis);
 
 
-		//update select with years
-		try{
-			let years = await getYears(obecRec["OrganizaciaId"]);
-			let opt = yearSel.selectAll('option').data(years);
-			opt.enter().append('option').merge(opt)
-				.attr("value", function(d){return d["id"];})
-				.text(function(d){return d["rok"]})
-				.attr('selected', function(d){ return  year == d["id"] ? true : null});
-			opt.exit().remove();
-		}catch(e){
-			console.log('Error: cannot set years.', e);
+	    	//update
+		    var bar = chart.selectAll('g.bar').data(data)
+		    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
+
+		   	var rect = bar.select('rect').transition().duration(750)
+	 			.attr("x", 3)
+	 			.attr("y", function(d) { return height - y(d.value.sum); })
+	      		.attr("height", function(d) { return y(d.value.sum); })
+	      		.attr("width", barWidth - 3);
+			
+			bar.select("text.label1")
+			    .attr("x", barWidth / 2)
+			    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
+			    .attr("dy", ".75em")
+			    .html(function(d) { return d.value.sum.toFixed(2) + " &euro;"; });
+			bar.select("text.label2")
+			    .attr("x", barWidth / 2)
+			    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
+			    .attr("dy", ".75em")
+			    .html(function(d) { return "#"+d.value.count ; });
+		    
+		    //create
+		    var newBar = bar.enter().append('g').attr('class', 'bar')
+		    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
+		    	.on('click', function(d, idx){
+		    		saveToHash("m", (idx+1)+"");
+		    	});
+
+		    var newRect = newBar
+		   		.append("rect")
+	 			.attr("x", 3)
+	 			.attr("y", function(d) { return height - y(d.value.sum); })
+	      		.attr("height", function(d) { return y(d.value.sum); })
+	      		.attr("width", barWidth - 3);
+	      		
+			newBar.append("text").attr('class', 'label1')
+			    .attr("x", barWidth / 2)
+			    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
+			    .attr("dy", ".75em")
+			    .html(function(d) { return curr(d.value.sum); });
+			newBar.append("text").attr('class', 'label2')
+			    .attr("x", barWidth / 2)
+			    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
+			    .attr("dy", ".75em")
+			    .html(function(d) { return "#"+d.value.count ; });
+
+			//remove
+			bar.exit().remove();
 		}
-
-	    //setup chart
-		var chart = selectRoot('svg', 'chart')
-	    	.attr('width', width + margin.left + margin.right)
-	    	.attr("height", height + margin.top + margin.bottom);
-		var chartG = chart.select("g.ch");
-		if(chartG.empty()){
-	    	chart = chart.append("g").attr('class','ch');
-		}else{
-			chart = chartG;
-		}
-    	chart.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-	    
-    	var axisG = chart.selectAll("g.x.axis");
-    	if(axisG.empty()){
-	    	axisG = chart.append("g").attr("class", "x axis");
-    	}
-    	axisG.attr("transform", "translate(0," + height + ")").call(xAxis);
-
-
-    	//update
-	    var bar = chart.selectAll('g.bar').data(data)
-	    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
-
-	   	var rect = bar.select('rect').transition().duration(750)
- 			.attr("x", 3)
- 			.attr("y", function(d) { return height - y(d.value.sum); })
-      		.attr("height", function(d) { return y(d.value.sum); })
-      		.attr("width", barWidth - 3);
 		
-		bar.select("text.label1")
-		    .attr("x", barWidth / 2)
-		    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
-		    .attr("dy", ".75em")
-		    .html(function(d) { return d.value.sum.toFixed(2) + " &euro;"; });
-		bar.select("text.label2")
-		    .attr("x", barWidth / 2)
-		    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
-		    .attr("dy", ".75em")
-		    .html(function(d) { return "#"+d.value.count ; });
-	    
-	    //create
-	    var newBar = bar.enter().append('g').attr('class', 'bar')
-	    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
-	    	.on('click', openGrid);
-
-	    var newRect = newBar
-	   		.append("rect")
- 			.attr("x", 3)
- 			.attr("y", function(d) { return height - y(d.value.sum); })
-      		.attr("height", function(d) { return y(d.value.sum); })
-      		.attr("width", barWidth - 3);
-      		
-		newBar.append("text").attr('class', 'label1')
-		    .attr("x", barWidth / 2)
-		    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
-		    .attr("dy", ".75em")
-		    .html(function(d) { return curr(d.value.sum); });
-		newBar.append("text").attr('class', 'label2')
-		    .attr("x", barWidth / 2)
-		    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
-		    .attr("dy", ".75em")
-		    .html(function(d) { return "#"+d.value.count ; });
-
-		//remove
-		bar.exit().remove();
-
-		//open month from hash
-		let month = +getHash()['m'];
- 		if(month && month>0 && month<data.length){
- 			openGrid(data[month-1], month-1, chart.selectAll('g.bar').nodes());
- 		}else{
- 			clearGrid();
- 		}
-
-
+		if(force || currentState.o != otag || currentState.y!=year || currentState.m != month){
+	 		if(month && month>0 && month<data.length){
+	 			openGrid(data[month-1], month-1, d3.selectAll('svg.chart g.bar').nodes());
+	 		}else{
+	 			clearGrid();
+	 		}
+	 	}
 }
 
 function clearGrid(){
@@ -241,7 +303,6 @@ function clearGrid(){
 
 function openGrid(data, idx, allBars){
 	//save month to hash
-	saveToHash("m", (idx+1)+"");
 	let width = d3.select('svg.chart').attr("width");
 	var size = width/3;
 

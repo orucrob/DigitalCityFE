@@ -26,7 +26,8 @@ export function dd(n){
 };
 
 export function removeAll(){
-	d3.select(appSelector).selectAll().remove();
+//	console.log('removing all', d3.select(appSelector).selectAll());
+	d3.selectAll(appSelector + " > *").remove();
 }
 export function selectRoot(elem, cls){
 	var sel = d3.select(appSelector).selectAll(elem+'.'+cls).data([1]);

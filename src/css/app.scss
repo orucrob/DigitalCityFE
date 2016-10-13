@@ -1,4 +1,6 @@
 $break-large: 1000px;
+$color-active1: #BF360C;
+$color-active2: #FF5722;
 
 body{
 	overflow-y: scroll;
@@ -30,6 +32,15 @@ body{
 		.heading{
 			font-size: 1.8em;
     		font-variant: small-caps;
+		}
+		.year, .name{
+			display: inline-block;
+			padding: 0.5em;
+			cursor: default;
+		}
+		.name:hover{
+			background-color: $color-active2;
+			color: white;
 		}
 	}
 	.error .message{
@@ -71,12 +82,12 @@ body{
 		}
 		&.selected{
 			rect{
-				fill: #FF5722;
+				fill: $color-active2;
 			}
 		}
 		&:hover{
 			rect{
-				fill: #BF360C;
+				fill: $color-active1;
 			}
 		}
 	}
@@ -101,8 +112,9 @@ svg.pie1 .hov{
 		div{
 			display: table-cell;
 		}
-		&:hover{
-			background-color: #FF5722;
+		&.selected{
+			background-color: $color-active2;
+			color: white;
 		}
 		.sum, .date, .id{
 			padding-right: 1em;
@@ -111,6 +123,7 @@ svg.pie1 .hov{
 		}
 	}
 }
+
 .grid2 {
 	position: absolute;
 	top:0;

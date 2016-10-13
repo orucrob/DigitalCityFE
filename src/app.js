@@ -15,12 +15,19 @@ function init(){
 		err.drawError(status, xhr);
 	});
 	on('obecselect', function(otag){
-		obec.removeAll();
-		yw.drawApp(otag);
+		removeAll();
+//		yw.drawApp(otag);
+	});
+	on('obecclick', function(){
+		removeAll();
+//		yw.drawApp();
 	});
 	yw.drawApp();
 }
 
 
 window.onload = init;
+window.addEventListener('popstate', function(event) {
+	yw.drawApp();
+});
 
