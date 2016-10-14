@@ -1,0 +1,91 @@
+@import "defs.scss";
+
+.monthview{
+	display: flex;
+	justify-content: center;
+	align-items: stretch;
+	flex-direction: column;
+	div.pie, div.grid{
+		flex:1;
+    	box-sizing: border-box;
+	}
+	div.pie{
+    	text-align: center;	
+		.hov{
+			path{
+				display: none;
+				&.on{
+					display: block;
+				}
+			}
+		}
+	
+	}
+	div.grid{
+		.grid1{
+			display: table;
+			font: 11px sans-serif;
+			border : 1px solid #607D8B;
+			width: 100%;
+			box-sizing: border-box;
+			.row{
+				display: table-row;
+				cursor: pointer;
+				div{
+					display: table-cell;
+				}
+				&.selected{
+					background-color: $color-active2;
+					color: white;
+				}
+				.sum, .date, .id{
+					padding-right: 1em;
+					padding-left: 1em;
+					text-align: right;
+				}
+			}			
+		}
+	}
+	@media screen and (min-width: $break-small) {
+		flex-direction: row;
+		align-items: flex-start;
+		div.pie{
+	    	text-align: right;		
+		}
+	}
+}
+.grid2 {
+	position: absolute;
+	top:0;
+	left:0;
+	padding: 1em;
+	font: 11px sans-serif;
+	border : 1px solid white;
+	background: $color-base;
+	color: white;	
+	.rowtitle{
+		font-weight: bold;
+		padding-bottom: 0.5em;
+	}
+	.innergrid{
+		display: table;
+		.row, .header{
+			display: table-row;
+			div{
+				display: table-cell;
+			}
+			.sum, .date, .id{
+				padding-right: 1em;
+				padding-left: 1em;
+				text-align: right;
+			}
+		}
+		.header > div{
+			padding-bottom: 0.2em;
+			margin-bottom: 0.2em;
+			border-bottom: 1px solid #DDD;
+			font-variant: small-caps;
+			color: #DDD;
+		}
+	}
+}

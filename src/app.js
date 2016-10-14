@@ -1,33 +1,63 @@
-'use strict';
-import 'babel-polyfill';
 import './css/app.scss';
 import * as d3 from 'd3';
-import  dataapi from './dataapi';
-import {removeAll, on} from './util';
+import * as dataapi from './dataapi';
+import * as u from './util';
 import * as obec from './obec';
 import * as yw from './yearview';
 import * as err from './error';
 
 
-function init(){
-	on('dataapierror', function(status, xhr){
+
+export function init(){
+	u.on('dataapierror', function(status, xhr){
 		removeAll();
 		err.drawError(status, xhr);
 	});
-	on('obecselect', function(otag){
-		removeAll();
-//		yw.drawApp(otag);
+	u.on('keydatechange', function(status, xhr){
+		drawApp();
 	});
-	on('obecclick', function(){
-		removeAll();
-//		yw.drawApp();
-	});
-	yw.drawApp();
+	drawApp();
+}
+
+function getPageId(otag, year, month){
+	if(!otag){
+		return 'obec';
+	}else {
+		return 'fadod';
+	}
 }
 
 
-window.onload = init;
-window.addEventListener('popstate', function(event) {
-	yw.drawApp();
-});
+export async function drawApp(otag, year, month){
+	otag = otag || u.getHash()['o'];
+	year = year || u.getHash()['y'] || new Date().getFullYear();
+	month = month || u.getHash()['m'];
+	let pageid = getPageId(otag, year, month);
+	let keydate = u.getKeydate();
+
+	//skip if already in current state
+	if(currentState.o == otag && currentState.y == year && currentState.m == month && currentState.pageid == pageid && currentState.keydate==keydate){
+		//nothing to update
+	}else{
+		if(currentState.pageid != pageid){
+			u.removeAll();
+		}
+		if(pageid == 'obec'){
+			await obec.draw();
+
+		}else if(pageid == 'fadod'){
+			await yw.draw(otag, year, month);
+		}
+		//update current state
+		currentState = {
+			y : year,
+			m: month,
+			o: otag,
+			pageid: pageid,
+			keydate: u.getKeydate()
+		};
+	}
+}
+
+
 

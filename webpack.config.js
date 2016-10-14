@@ -7,15 +7,15 @@ const path = require('path');
 
 module.exports = {
     entry: {
-        'app': ['./src/app']
-//        'app': ['webpack-dev-server/client?http://localhost:8008', './src/app']
+        'main': ['./src/main']
+//        'main': ['webpack-dev-server/client?http://localhost:8008', './src/main']
     },
     output: {
         filename: '[name].js',
         path: path.join(__dirname, './dist'),
         publicPath: ''
     },
-    devtool: "cheap-module-source-map", //"source-map", // or "inline-source-map"
+    devtool: "source-map",//"cheap-module-source-map", //"source-map", // or "inline-source-map"
     module: {
         loaders: [{
             test: /\.js$/,
@@ -33,7 +33,7 @@ module.exports = {
     plugins: [
         extractCSS, 
         new HtmlWebpackPlugin({
-            chunks: ['app'],
+            chunks: ['main'],
             template: 'index.html', 
             hash: true,
             minify: {

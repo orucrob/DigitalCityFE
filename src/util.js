@@ -3,18 +3,26 @@ import * as d3 from 'd3';
 const appSelector = "#app";
 
 export function mf(isoDate){
+	if(!isoDate) return 'No date';
 	return isoDate.substring(5,7);
 };
 export function yf(isoDate){
+	if(!isoDate) return 'No date';
 	return isoDate.substring(0,4);
 };
 export function ymf(isoDate){
+	if(!isoDate) return 'No date';
 	return yf(isoDate)+''+mf(isoDate);
 };
 export function curr(number){
+	if(number===undefined || number==="" ) return 'No sum';
 	return number.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })
 };
+export function dfKd(d){
+	return df(d && d[getKeydate()]);
+}
 export function df(d){
+	if(!d)	return 'No date';
 	if(!(d instanceof Date)){
 		d = new Date(d);
 	}
@@ -29,17 +37,43 @@ export function removeAll(){
 //	console.log('removing all', d3.select(appSelector).selectAll());
 	d3.selectAll(appSelector + " > *").remove();
 }
+
+export function selectApp(){
+	return d3.select(appSelector);	
+}
+
 export function selectRoot(elem, cls){
 	var sel = d3.select(appSelector).selectAll(elem+'.'+cls).data([1]);
 	sel.exit().remove();
 	sel = sel.enter().append(elem).attr('class', cls).merge(sel);
 	return sel;
-
 }
+
+//select or create elemet under appSelector. Arguments are electors with class (e.g. 'div.grid')
+export function selectOrCreate(selectors){
+	var sel = d3.select(appSelector);
+	for(let i=0; i<arguments.length; i++){
+		let selector = arguments[i];
+		let selParts = selector.split('.');
+
+		var s = sel.selectAll(selector).data([1]);
+		s.exit().remove(); //just in case, but should never happen
+		sel = s.enter().append(selParts[0]).attr('class', selParts[1]).merge(s);
+	}
+	return sel;
+}
+
 export function getAppWidth(){
 	return parseInt(d3.select(appSelector).style("width"),10); 
 	return 900;
 }
+export function getKeydate(){
+	return window.localStorage && window.localStorage.getItem('keydate') || 'DatumZverejnenia';
+}
+export function setKeydate(keydate){
+	window.localStorage && window.localStorage.setItem('keydate', keydate);
+}
+
 
 export function getWindowHeight(){
 	let w = window,

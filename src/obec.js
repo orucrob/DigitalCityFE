@@ -1,50 +1,28 @@
+import './css/obec.scss';
 import * as d3 from 'd3';
-import  dataapi from './dataapi';
-import {saveToHash, selectRoot, fire} from './util';
+import * as dataapi from './dataapi';
+import * as u from './util';
 
-
-let data = undefined;
 
 export async function draw(){
-	let d = await getData();
+	let d = await dataapi.getObecData();
 	if(d && d.length>0){
+		drawTitle();
 		drawSerchBox(d);
 		drawTable(d);
 	}else{
+		console.log('No data.');
 		//TODO no data
 	}
 }
 
-export async function getData(){
-	try{
-		if(!data){
-			data = loadData();
-		}
-		return await data;
-	}catch(e){
-		//cannot get data
-		return undefined;
-	}
-} 
-
-function loadData(){
-	return new Promise(function(resolve, reject){
-		d3.json(dataapi.organizacie(), function (json) {
-		    if(!json){
-		    	reject(json);
-		    }else{
-			    resolve(json.Data);
-		    }
-		}).on('error', function(ev){
-			let xhr = ev.srcElement,
-				status = xhr.status;
-			fire('dataapierror', [status, xhr]);
-		});
-	});
+function drawTitle(){
+	u.selectOrCreate('div.obec','div.heading').text("Select City");
 }
+
 function drawSerchBox(data){
 	data = data || [];
-	let searchBox = selectRoot('div', 'obecsearch');
+	let searchBox = u.selectOrCreate('div.obec','div.search');
 	var inp = searchBox.select('input');
 	if(inp.empty()){
 		inp = searchBox.append('input').attr('type', 'search').attr('placeholder','Search...');
@@ -67,7 +45,7 @@ function drawSerchBox(data){
 }
 function handleKeyDown(code, grid){
 	if( code == 38 || code == 40){
-		grid = grid || selectRoot('div', 'obecgrid');
+		grid = grid || u.selectOrCreate('div.obec','div.obecgrid');
 		let idx = 0;
 		let current = grid.selectAll('.row.selected');
 		if(!current.empty()){
@@ -92,16 +70,16 @@ function selectObec(){
 	let current = d3.selectAll('div.obecgrid .row.selected');
 	if(!current.empty()){
 		var hash = current.attr('data-id');
-		fire('obecselect', [hash]);
-		saveToHash('o', hash);
+		u.fire('obecselect', [hash]);
+		u.saveToHash('o', hash);
 	}
 }
 export function drawTable(data){
 	
 	data.sort(function(a, b){ return d3.ascending(a["Nazov"], b["Nazov"]); });
 
-	let grid = selectRoot('div', 'obecgrid');
-	grid.style('border', '1px solid black');
+	let grid = u.selectOrCreate('div.obec','div.obecgrid');
+//	grid.style('border', '1px solid black');
 	grid.on('keydown', function(){
 		handleKeyDown(d3.event.keyCode, grid);
 	}).on('click', selectObec);
@@ -135,26 +113,9 @@ export function drawTable(data){
 }
 
 export function removeAll(){
-	d3.select('div.obecgrid').remove();
-	d3.select('div.obecsearch').remove();
+	d3.select('div.obec').remove();
 }
 
 
 
-export async function getOrgRec(oTag){
-	if(!oTag) return;
-	let d = await getData();
-	let ret;
-
-	if(d){
-		for(let i = 0; i<d.length ; i++){
-			if(d[i]["HashTag"] == oTag){
-				ret = d[i];
-				break;
-			}
-		}
-	}
-
-	return ret;
-}
 

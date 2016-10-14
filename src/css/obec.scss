@@ -1,0 +1,47 @@
+@import "defs.scss";
+
+.obec{
+	display: flex;
+    flex-direction: column;
+    align-items: center;
+	.heading{
+		align-self: flex-start;
+		font-size: 30px;
+		font-variant: small-caps;
+	}
+
+	.obecgrid{
+		display: table;
+		font: 11px sans-serif;
+		border : 1px solid #607D8B;
+		box-sizing: border-box;
+		.row{
+			display: table-row;
+			cursor: pointer;
+			div{
+				display: table-cell;
+			}
+			&.selected{
+				background-color: $color-active2;
+				color: white;
+			}
+			.sum, .date, .id{
+				padding-right: 1em;
+				padding-left: 1em;
+				text-align: right;
+			}
+		}
+	}
+
+	.search{
+	    width: 100%;
+	    text-align: center;
+	    padding: 1em;
+	    input{
+			font-size: 1.8em;
+			font-weight: bold;
+			width:100%;
+			max-width: 600px;	    	
+	    }	
+	}
+}

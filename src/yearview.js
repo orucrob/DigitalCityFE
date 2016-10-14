@@ -1,165 +1,115 @@
 import * as d3 from 'd3';
-import  dataapi from './dataapi';
-import {ymf, mf,df,dd,curr, selectRoot, getAppWidth, getWindowHeight, getHash, saveToHash, clearFromHash, fire, getMissingMonths, removeAll} from './util';
+import * as dataapi from './dataapi';
+import * as u from './util';
 import * as obec from './obec';
+import * as mw from './monthview';
 
 
 const margin = {top: 20, right: 30, bottom: 30, left: 40};
-const color = d3.scaleOrdinal(d3.schemeCategory20 );
-let currentState = {
-	o:undefined,
-	y:undefined,
-	m:undefined
-};
 
-function prepareData(jsonData){
-	    let data = d3.nest()
-		    .key(function(d) { return ymf(d["DatumZverejnenia"]); })
-		    .sortKeys(d3.ascending)
-		    .rollup(function(dd){
-				return {
-					sum: d3.sum(dd, function(g) { 
-			      		return parseFloat(g["SumaCelkom"]);
-			 			}),
-					count: dd.length,
-					detail: dd
-				};
-			 }).entries(jsonData);
-
-		let keys = data.map(function(v){return v["key"];});
-		
-		//add empty months
-		let missing = getMissingMonths(keys);
-		if(missing && missing.length>0){
-			missing.forEach(function(m){
-				data.push({
-					key: m,
-					value:{
-						sum: 0,
-						count:0,
-						detail:[]
-					}
-				});
-				keys.push(m);
-
-			});		
-			keys.sort(d3.ascending);
-			data.sort(function(a, b){ return d3.ascending(a.key, b.key);});
-		}
-
-		return {
-			data: data,
-			keys: keys,
-		};
-}
-export async function drawApp(otag, year, month){
-	otag = otag || getHash()['o'];
-	year = year || getHash()['y'] || new Date().getFullYear();
-	month = month || getHash()['m'];
-	//skip if already in current state
-	if(currentState.o == otag && currentState.y == year && currentState.m == month){
-		//nothing
+export async function draw(otag, year, month,){
+	let orgRec = await dataapi.getOrgRec(otag),
+		orgId = orgRec && orgRec['OrganizaciaId'];
+	
+	if(!orgId){
+		//not existing org
+		u.clearFromHash('o');
 	}else{
-		let orgRec = await obec.getOrgRec(otag),
-			orgId = orgRec && orgRec['OrganizaciaId'];
-
-		if(orgId){
-			let jsonData = await getFaDod(orgId, year);
-			if(jsonData){
-				let chartData = prepareData(jsonData);
-				await drawChart(otag, year, month, chartData , orgRec);
-				//TODO be sure, that resize is listented only once
-				d3.select(window).on('resize', function(){
-					drawChart(otag, year, month, chartData , orgRec, true);
-				});
-			}else{
-				//TODO - no data
-			}
+		let chartData = await dataapi.getFaDodForYearChart(orgId, year);
+		if(chartData){
+			drawTitle(otag, year, month, orgRec);
+			await drawChart(otag, year, month, chartData );
+			//TODO be sure, that resize is listented only once
+			d3.select(window).on('resize', function(){
+				drawChart(otag, year, month, chartData , true, true); //TODO do not animate when resize
+			});
 		}else{
-			await obec.draw();
-		}
-
-		//update current state
-		currentState = {
-			y : year,
-			m: month,
-			o: otag
-		};
-	}
-
-
-}
-var faDods = [];
-function loadFaDod(orgId, year){
-	return new Promise(function(resolve, reject){
-		d3.json(dataapi.faDod(orgId, year), function (json) {
-		    if(json && json.Data){
-			    resolve(json.Data);
-		    }else{
-		    	reject(json);
-		    }
-		}).on('error', function(ev){
-			let xhr = ev.srcElement,
-				status = xhr.status;
-			fire('dataapierror', [status, xhr]);
-		});
-	});
-}
-async function getFaDod(orgId,year){
-	var ret;
-	for(var i=0;i<faDods.length;i++){
-		if(faDods[i].o == orgId && faDods[i].y == year ){
-			ret = faDods[i].data;
-			break;
+			console.log('No data');
+				//TODO - no data
 		}
 	}
-	if(!ret){
-		ret = loadFaDod(orgId, year);
-		faDods.push({
-			o:orgId,
-			y:year,
-			data: ret
+
+}
+
+
+async function drawTitle(otag, year, month, obecRec){
+	obecRec = obecRec || {};
+
+	if(currentState.o != otag || currentState.y!=year){
+
+	    //setup title
+		var chartTitle = u.selectRoot('div', 'chartTitle')
+
+		var heading = chartTitle.select('.heading');
+		heading = heading.empty() ? chartTitle.append('div').attr('class','heading') : heading;
+		heading.text("Invoices (suppliers)");
+
+		var name = chartTitle.select('.name');
+		name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
+		name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}): `);
+		name.on('click', function(){
+			u.fire('obecclick',[]);
+			u.clearFromHash('o');
 		});
-		if(faDods.length>10){
-			faDods.shift();
+
+
+		var yearDiv = chartTitle.select('.year');
+		yearDiv = yearDiv.empty() ? chartTitle.append('div').attr('class','year') : yearDiv;
+		yearDiv.html(`Year <small>(for 'DatumZverejnenia')</small>: `);
+
+
+		var yearSel = yearDiv.select('select');
+		yearSel = yearSel.empty() ? yearDiv.append('select') : yearSel;
+		yearSel.selectAll('option').remove();
+		yearSel.append('option').text(''+year);
+		yearSel.on('change', function(){
+			let newY = parseInt(this.value, 10);
+			if(year != newY){
+				u.saveToHash('y', newY);
+			}
+		});
+
+		var keyDateDiv = chartTitle.select('.keydate');
+		keyDateDiv = keyDateDiv.empty() ? chartTitle.append('div').attr('class','keydate') : keyDateDiv;
+		keyDateDiv.html(`Key Date: `);
+
+
+		var keyDateSel = keyDateDiv.select('select');
+		keyDateSel = keyDateSel.empty() ? keyDateDiv.append('select') : keyDateSel;
+		let opts = keyDateSel.selectAll('option').data(['DatumZverejnenia','DatumVystavenia','DatumUhrady', 'DatumSplatnosti', 'DatumDorucenia']);
+		opts.exit().remove();
+		let currentKeyDate = u.getKeydate();
+		opts.enter().append('option').merge(opts).attr('value', function(d){return d;}).text(function(d){return d;}).attr('selected', function(d){ return  currentKeyDate == d ? true : null});
+		keyDateSel.on('change', function(){
+			u.setKeydate(this.value);
+			u.fire('keydatechange', [this.value]);
+		});
+
+		//update select with years
+		try{
+			let years = await dataapi.getYears(obecRec["OrganizaciaId"]);
+			let opt = yearSel.selectAll('option').data(years);
+			opt.enter().append('option').merge(opt)
+				.attr("value", function(d){return d["id"];})
+				.text(function(d){return d["rok"]})
+				.attr('selected', function(d){ return  year == d["id"] ? true : null});
+			opt.exit().remove();
+		}catch(e){
+			console.log('Error: cannot set years.', e);
 		}
 	}
-	return await ret;
-} 
 
-var years = {};
-function loadYears(orgId){
-	return new Promise(function(resolve, reject){
-		d3.json(dataapi.faDodYears(orgId), function (json) {
-		    if(json && json.Data){
-			    resolve(json.Data);
-		    }else{
-		    	reject(json);
-		    }
-		}).on('error', function(ev){
-			let xhr = ev.srcElement,
-				status = xhr.status;
-			fire('dataapierror', [status, xhr]);
-		});
-	});
 }
-async function getYears(orgId){
-	if(!years[orgId+'']){
-		years[orgId+''] = loadYears(orgId);
-	}
-	return await years[orgId+''];
-} 
-
-async function drawChart(otag, year, month, chartData, obecRec, force){
+async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 	    let data = chartData.data,
-	    	keys = chartData.keys;
-	    obecRec = obecRec || {};
+	    	keys = chartData.keys,
+	    	keydate = u.getKeydate();
 
-	    if(force || currentState.o != otag || currentState.y!=year){
+	    if(force || currentState.o != otag || currentState.y!=year || currentState.keydate != keydate){
 
-		    const appWidth = getAppWidth();
+		    const appWidth = u.getAppWidth();
 		    const width = appWidth - margin.left - margin.right;
-		    const height = getWindowHeight()/2 - margin.top - margin.bottom;
+		    const height = u.getWindowHeight()/2 - margin.top - margin.bottom;
 	    	var barWidth = width / data.length;
 
 			var x = d3.scalePoint().domain(keys).rangeRound([0, width]).padding(.5);
@@ -170,55 +120,8 @@ async function drawChart(otag, year, month, chartData, obecRec, force){
 
 	    	var xAxis = d3.axisBottom(x).tickValues(keys);
 
-		    //setup title
-			var chartTitle = selectRoot('div', 'chartTitle')
-
-			var heading = chartTitle.select('.heading');
-			heading = heading.empty() ? chartTitle.append('div').attr('class','heading') : heading;
-			heading.text("Invoices (suppliers)");
-
-			var name = chartTitle.select('.name');
-			name = name.empty() ? chartTitle.append('div').attr('class','name') : name;
-			name.html(`OID: ${obecRec["OrganizaciaId"]} Title: <b>${obecRec["Nazov"]}</b> (${obecRec["HashTag"]}): `);
-			name.on('click', function(){
-				fire('obecclick',[]);
-				clearFromHash('o');
-			});
-
-
-			var yearDiv = chartTitle.select('.year');
-			yearDiv = yearDiv.empty() ? chartTitle.append('div').attr('class','year') : yearDiv;
-			yearDiv.html(`Year: `);
-
-
-			var yearSel = yearDiv.select('select');
-			yearSel = yearSel.empty() ? yearDiv.append('select') : yearSel;
-			yearSel.selectAll('option').remove();
-			yearSel.append('option').text(''+year);
-			yearSel.on('change', function(){
-				let newY = parseInt(this.value, 10);
-				if(year != newY){
-					saveToHash('y', newY);
-					//drawApp();
-				}
-			});
-
-
-			//update select with years
-			try{
-				let years = await getYears(obecRec["OrganizaciaId"]);
-				let opt = yearSel.selectAll('option').data(years);
-				opt.enter().append('option').merge(opt)
-					.attr("value", function(d){return d["id"];})
-					.text(function(d){return d["rok"]})
-					.attr('selected', function(d){ return  year == d["id"] ? true : null});
-				opt.exit().remove();
-			}catch(e){
-				console.log('Error: cannot set years.', e);
-			}
-
 		    //setup chart
-			var chart = selectRoot('svg', 'chart')
+			var chart = u.selectRoot('svg', 'chart')
 		    	.attr('width', width + margin.left + margin.right)
 		    	.attr("height", height + margin.top + margin.bottom);
 			var chartG = chart.select("g.ch");
@@ -240,8 +143,8 @@ async function drawChart(otag, year, month, chartData, obecRec, force){
 		    var bar = chart.selectAll('g.bar').data(data)
 		    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
 
-		   	var rect = bar.select('rect').transition().duration(750)
-	 			.attr("x", 3)
+		   	var rect = withoutAnimation ? bar.select('rect') : bar.select('rect').transition().duration(750);
+		   	rect.attr("x", 3)
 	 			.attr("y", function(d) { return height - y(d.value.sum); })
 	      		.attr("height", function(d) { return y(d.value.sum); })
 	      		.attr("width", barWidth - 3);
@@ -261,7 +164,7 @@ async function drawChart(otag, year, month, chartData, obecRec, force){
 		    var newBar = bar.enter().append('g').attr('class', 'bar')
 		    	.attr("transform", function(d, i) { return "translate(" + i * barWidth + ",0)"; })
 		    	.on('click', function(d, idx){
-		    		saveToHash("m", (idx+1)+"");
+		    		u.saveToHash("m", (idx+1)+"");
 		    	});
 
 		    var newRect = newBar
@@ -275,7 +178,7 @@ async function drawChart(otag, year, month, chartData, obecRec, force){
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
 			    .attr("dy", ".75em")
-			    .html(function(d) { return curr(d.value.sum); });
+			    .html(function(d) { return u.curr(d.value.sum); });
 			newBar.append("text").attr('class', 'label2')
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
@@ -286,219 +189,16 @@ async function drawChart(otag, year, month, chartData, obecRec, force){
 			bar.exit().remove();
 		}
 		
-		if(force || currentState.o != otag || currentState.y!=year || currentState.m != month){
-	 		if(month && month>0 && month<data.length){
-	 			openGrid(data[month-1], month-1, d3.selectAll('svg.chart g.bar').nodes());
+		if(force || currentState.o != otag || currentState.y!=year || currentState.m != month || currentState.keydate != keydate){
+	 		if(month && month>0 && month<=data.length){
+	 			mw.draw(data[month-1], month-1);
+	 			//mark selected bar
+				d3.selectAll('svg.chart g.bar').classed('selected', function(d, i){return i==(month-1);});
+
 	 		}else{
-	 			clearGrid();
+	 			mw.remove();
 	 		}
 	 	}
 }
 
-function clearGrid(){
-	d3.selectAll('svg.pie1').remove();
-	d3.selectAll('div.grid1').remove();
-	clearFromHash('m');
-}
-
-function openGrid(data, idx, allBars){
-	//save month to hash
-	let width = d3.select('svg.chart').attr("width");
-	var size = width/3;
-
-	//mark selected bar
-	d3.selectAll(allBars).classed('selected', function(d, i){return i==idx;});
-	
-	let gridData = d3.nest()
-		    .key(function(d) { return d["DodavatelIco"]; })
-		    //.sortKeys(d3.ascending)
-		    .rollup(function(dd){
-				return {
-					sum: d3.sum(dd, function(g) { 
-			      		return parseFloat(g["SumaCelkom"]);
-			 			}),
-					name: dd[0]["DodavatelNazov"],
-					count: dd.length,
-					detail: dd
-				};
-			 }).entries(data.value.detail)
-		    .sort(function(a, b){ return d3.descending(a.value.sum, b.value.sum); });
-
-	//PIE
-	let pieSvg = selectRoot('svg','pie1');
-	pieSvg = pieSvg.attr('width', size).attr('height', size);
-	let pieSvgG = pieSvg.select("g.ch");
-	let pieSvgHover = pieSvg.select("g.hov");
-	if(pieSvgHover.empty()){
-    	pieSvgHover = pieSvg.append("g").attr('class','hov');
-	}
-	if(pieSvgG.empty()){
-    	pieSvg = pieSvg.append("g").attr('class','ch');
-	}else{
-		pieSvg = pieSvgG;
-	}
-	pieSvg.attr('transform', 'translate(' + (size / 2) + ',' + (size / 2) + ')');
-	pieSvgHover.attr('transform', 'translate(' + (size / 2) + ',' + (size / 2) + ')');
-
-
-	var r = (size-100)/2;
-	var arc = d3.arc().innerRadius(r*0.5).outerRadius(r);
-	var arcOn = d3.arc().innerRadius(r).outerRadius(r + 20);
-	var pieData = d3.pie().value(function(d) { return d.value.sum;})(gridData);
-
-	//pie (without selection)
-	var path = pieSvg.selectAll('path').data(pieData).attr('class', function(d,i){return "p"+i;});
-	path.transition().duration(750).attrTween("d", function(d) {
-  			var i = d3.interpolate(this._current, d);
-  			this._current = i(0);
-  			return function(t) {
-    			return arc(i(t));
-  			};
-		});
-
-	var removePath = path.exit();
-	removePath.transition().duration(750).attrTween("d", function(d) {
-  			var iEnd = d3.interpolate(d.endAngle, 2 * Math.PI);
-  			var iStart = d3.interpolate(d.startAngle, 2 * Math.PI);
-  			return function(t) {
-  				d.startAngle = iStart(t);
-  				d.endAngle = iEnd(t);
-    			return arc(d);
-  			};
-		}).on('end', function(){
-			removePath.remove();
-		});
-
-	var newPath = path.enter()
-		.append('path')
-//		.attr('d', arc)
-		.attr('fill', function(d,i){return color(i);})
-		.attr('class', function(d,i){return "p"+i;});
-	newPath.transition().duration(750).attrTween("d", function(d) {
-  			var iEnd = d3.interpolate( 2 * Math.PI,d.endAngle);
-  			var iStart = d3.interpolate(2 * Math.PI, d.startAngle);
-  			this._current = d; // store the initial angles for transitions
-  			return function(t) {
-  				d.startAngle = iStart(t);
-  				d.endAngle = iEnd(t);
-    			return arc(d);
-  			};
-		});
-	//newPath.each(function(d) { this._current = d; });// store the initial angles for transitions
-	newPath.on('mouseover', pieOn)
-		.on('mouseout', pieOff);
-
-	//selection for pie charts
-	var pathHov = pieSvgHover.selectAll('path').data(pieData).attr('class', function(d,i){return "p"+i;}).attr('d', arcOn);
-	pathHov.exit().remove();
-	var newPathHov = pathHov.enter()
-		.append('path')
-		.attr('d', arcOn)
-		.attr('fill', function(d,i){
-			let c = d3.color(color(i));
-			c.opacity = 0.5;
-			return c.toString();
-		})
-		.attr('class', function(d,i){return "p"+i;});
-
-
-	//GRID
-	var grid = selectRoot('div', 'grid1');
-
-	//grid.style('border', '1px solid black').style('width', size+'px');
-	var row = grid.selectAll('.row')
-		.data(gridData).attr('class',function(d,i){return "row idx"+i;});
-	row.select(".col").attr('min-width', '1em').style('min-height', '1em').style('background', function(d,i){return color(i);});
-	row.select(".sum").text(function(d,i){return curr(d.value.sum);});
-	row.select(".title").text(function(d,i){return d.value.name;});
-	row.select(".subject").text(function(d,i){return "#"+ d.value.count;});
-
-	row.exit().remove();
-	
-	var newRow = row.enter().append('div')
-		.attr('class',function(d,i){return "row idx"+i;});
-	newRow.append("div").attr("class","col").style('min-width', '1em').style('min-height', '1em').style('background', function(d,i){return color(i);});
-	newRow.append("div").attr("class","sum").text(function(d,i){return curr(d.value.sum);});
-	newRow.append("div").attr("class","title").text(function(d,i){return d.value.name;});
-	newRow.append("div").attr("class","subject").text(function(d,i){return "#"+ d.value.count;});
-	newRow
-		.on('mouseover', pieOn)
-		.on('mouseout', pieOff)
-		.on('mousemove', movegrid);
-}
-function pieOn(d,i){
-	var c = d3.selectAll('svg.pie1 .hov .p'+i).classed('on', true).attr("fill");
-	d3.selectAll('div.grid1 .row.idx'+i).classed('selected',true).style('background',c);
-	openGrid2(d);
-}
-function pieOff(d,i){
-	d3.selectAll('svg.pie1 .hov .p'+i).classed('on', false);
-	d3.selectAll('div.grid1 .row.idx'+i).classed('selected',false).style('background',null);
-	closeGrid2();
-}
-
-
-let grid2;
-let grid2Height = 0;
-let grid2Width = 0;
-let bodyHeight = 0;
-let bodyWidth = 0;
-
-function openGrid2(data){
-	let gridData = data.data && data.data.value.detail || data.value.detail;
-	gridData = gridData.sort(function(a, b){ return d3.descending(a["SumaCelkom"], b["SumaCelkom"]); });
-	var coo = d3.mouse(d3.select('body').node());
-	
-	grid2 = d3.select('.grid2');
-	if(grid2.empty()){
-		grid2 = d3.select('body').append('div').attr('class','grid2');
-	}	
-
-	grid2.style("transform", "translate(" + (coo[0]+50) + "px," + coo[1] + "px)");;
-	//title
-	var title = grid2.selectAll('.rowtitle').data([1]);
-	title.enter().append('div').attr('class', 'rowtitle').attr('colspan',4).merge(title).text(gridData && gridData[0] && gridData[0]["DodavatelNazov"] || "??");
-
-	//inner grid
-	var innerGrid = grid2.selectAll('.innergrid').data([1]);
-	innerGrid = innerGrid.enter().append('div').attr('class', 'innergrid').merge(innerGrid);
-
-	//rows
-	var row = innerGrid.selectAll('.row').data(gridData);
-	row.select(".sum").text(function(d,i){return d["SumaCelkom"];});
-	row.select(".time").text(function(d,i){return d["DatumZverejnenia"];});
-	row.select(".subject").text(function(d,i){return d["Predmet"];});
-	
-	row.exit().remove();
-	
-	var newRow = row.enter().append('div').attr('class','row');
-	newRow.append("div").attr("class","no").text(function(d,i){return "#"+(i+1);});
-	newRow.append("div").attr("class","sum").text(function(d,i){return curr(d["SumaCelkom"]);});
-	newRow.append("div").attr("class","date").text(function(d,i){return df(d["DatumZverejnenia"]);});
-	newRow.append("div").attr("class","subject").text(function(d,i){return d["Predmet"];});
-
-	grid2Height = parseInt(grid2.style('height'),10);
-	grid2Width = parseInt(grid2.style('width'),10);
-	bodyHeight = parseInt(d3.select('body').style('height'),10);
-	bodyWidth = parseInt(d3.select('body').style('width'),10);
-}
-function closeGrid2(){
-	d3.select('.grid2').remove();
-	grid2 = undefined;
-}
-
-function movegrid(){
-	var coo = d3.mouse(d3.select('body').node());
-	if(grid2){
-		if(grid2Height+coo[1] > bodyHeight-20){
-			coo[1] -= grid2Height+10;
-		}
-		if(grid2Width+coo[0] > bodyWidth-70 && coo[0]- grid2Width > 50){
-			coo[0] -= grid2Width+50;
-		}else{
-			coo[0] +=50;
-		}
-		grid2.style("transform", "translate(" + (coo[0]) + "px," + coo[1] + "px)");
-	}
-}
 
