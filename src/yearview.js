@@ -6,6 +6,12 @@ import * as mw from './monthview';
 
 
 const margin = {top: 20, right: 30, bottom: 30, left: 40};
+const parseKey = d3.timeParse("%Y%m");
+const formatKeyD = d3.timeFormat("%b/%y");
+const formatKey = function(v){
+	if(v=='999999') return 'No data';
+	else return formatKeyD(parseKey(v));
+}
 
 export async function draw(otag, year, month,){
 	let orgRec = await dataapi.getOrgRec(otag),
@@ -117,8 +123,7 @@ async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 				.domain([0, d3.max(data, function(g){return g.value.sum;})])
 	    		.range([40,height]);
 
-
-	    	var xAxis = d3.axisBottom(x).tickValues(keys);
+	    	var xAxis = d3.axisBottom(x).tickFormat(formatKey);
 
 		    //setup chart
 			var chart = u.selectRoot('svg', 'chart')
@@ -152,12 +157,12 @@ async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 			bar.select("text.label1")
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
-			    .attr("dy", ".75em")
-			    .html(function(d) { return d.value.sum.toFixed(2) + " &euro;"; });
+			    .attr("dy", "1em")
+			    .html(function(d) { return u.curr(d.value.sum); });
 			bar.select("text.label2")
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
-			    .attr("dy", ".75em")
+			    .attr("dy", "1em")
 			    .html(function(d) { return "#"+d.value.count ; });
 		    
 		    //create
@@ -177,12 +182,12 @@ async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 			newBar.append("text").attr('class', 'label1')
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 3; })
-			    .attr("dy", ".75em")
+			    .attr("dy", "1em")
 			    .html(function(d) { return u.curr(d.value.sum); });
 			newBar.append("text").attr('class', 'label2')
 			    .attr("x", barWidth / 2)
 			    .attr("y", function(d) { return height - y(d.value.sum) + 20; })
-			    .attr("dy", ".75em")
+			    .attr("dy", "1em")
 			    .html(function(d) { return "#"+d.value.count ; });
 
 			//remove
@@ -191,7 +196,7 @@ async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 		
 		if(force || currentState.o != otag || currentState.y!=year || currentState.m != month || currentState.keydate != keydate){
 	 		if(month && month>0 && month<=data.length){
-	 			mw.draw(data[month-1], month-1);
+	 			mw.draw(data[month-1], month-1 , formatKey(keys[month-1]));
 	 			//mark selected bar
 				d3.selectAll('svg.chart g.bar').classed('selected', function(d, i){return i==(month-1);});
 

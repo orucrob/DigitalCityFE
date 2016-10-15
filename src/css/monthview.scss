@@ -1,56 +1,64 @@
 @import "defs.scss";
 
 .monthview{
-	display: flex;
-	justify-content: center;
-	align-items: stretch;
-	flex-direction: column;
-	div.pie, div.grid{
-		flex:1;
-    	box-sizing: border-box;
+	.header{
+		font-size: 1.8em;
+		font-variant: small-caps;
+		padding: 1em;
+		text-align: center;
 	}
-	div.pie{
-    	text-align: center;	
-		.hov{
-			path{
-				display: none;
-				&.on{
-					display: block;
+	.charts{
+		display: flex;
+		justify-content: center;
+		align-items: stretch;
+		flex-direction: column;
+		div.pie, div.grid{
+			flex:1;
+	    	box-sizing: border-box;
+		}
+		div.pie{
+	    	text-align: center;	
+			.hov{
+				path{
+					display: none;
+					&.on{
+						display: block;
+					}
 				}
 			}
+		
 		}
-	
-	}
-	div.grid{
-		.grid1{
-			display: table;
-			font: 11px sans-serif;
-			border : 1px solid #607D8B;
-			width: 100%;
-			box-sizing: border-box;
-			.row{
-				display: table-row;
-				cursor: pointer;
-				div{
-					display: table-cell;
-				}
-				&.selected{
-					background-color: $color-active2;
-					color: white;
-				}
-				.sum, .date, .id{
-					padding-right: 1em;
-					padding-left: 1em;
-					text-align: right;
-				}
-			}			
+		div.grid{
+			.grid1{
+				display: table;
+				font: 11px sans-serif;
+				border : 1px solid #607D8B;
+				width: 100%;
+				box-sizing: border-box;
+				.row{
+					display: table-row;
+					cursor: pointer;
+					div{
+						display: table-cell;
+					}
+					&.selected{
+						background-color: $color-active2;
+						color: white;
+					}
+					.sum, .date, .id{
+						padding-right: 1em;
+						padding-left: 1em;
+						text-align: right;
+					}
+				}			
+			}
 		}
-	}
-	@media screen and (min-width: $break-small) {
-		flex-direction: row;
-		align-items: flex-start;
-		div.pie{
-	    	text-align: right;		
+		@media screen and (min-width: $break-small) {
+			flex-direction: row;
+			align-items: flex-start;
+			div.pie{
+		    	text-align: right;		
+			}
 		}
 	}
 }

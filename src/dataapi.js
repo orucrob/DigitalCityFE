@@ -56,7 +56,7 @@ export async function getFaDodForYearChart(orgId, year){
 	let jsonData = await getFaDod(orgId, year);
 	if(jsonData){
 	    let data = d3.nest()
-		    .key(function(d) { return u.ymf(d[u.getKeydate()]);})
+		    .key(function(d) { return u.ym(d[u.getKeydate()]);})
 		    .sortKeys(d3.ascending)
 		    .rollup(function(dd){
 				return {
@@ -69,7 +69,6 @@ export async function getFaDodForYearChart(orgId, year){
 			 }).entries(jsonData);
 
 		let keys = data.map(function(v){return v["key"];});
-		
 		//add empty months
 		let missing = u.getMissingMonths(keys);
 		if(missing && missing.length>0){

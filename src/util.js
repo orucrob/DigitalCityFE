@@ -10,13 +10,18 @@ export function yf(isoDate){
 	if(!isoDate) return 'No date';
 	return isoDate.substring(0,4);
 };
+export function ym(isoDate){
+	if(!isoDate) return '999999';
+	return yf(isoDate)+''+mf(isoDate);
+};
 export function ymf(isoDate){
 	if(!isoDate) return 'No date';
-	return yf(isoDate)+''+mf(isoDate);
+	return yf(isoDate)+'/'+mf(isoDate);
 };
 export function curr(number){
 	if(number===undefined || number==="" ) return 'No sum';
-	return number.toLocaleString('sk-SK', { style: 'currency', currency: 'EUR' })
+	//TODO sk-SK doesn't work in MS EDGE, but CS does. ?!?! all sums are in euro for slovak cities
+	return number.toLocaleString('cs'/*'sk-SK'*/, { style: 'currency', currency: "EUR", currencyDisplay:"symbol" })
 };
 export function dfKd(d){
 	return df(d && d[getKeydate()]);
@@ -146,8 +151,11 @@ export function fire(event, argsArr){
 
 //suppose the months are in format YYYYMM and are in ascending order
 export function getMissingMonths(months){
+	if(months.length==0 || months.length==1 && months[0]=="999999"){
+		return [];
+	}
 	let start = months[0],
-		end = months[months.length-1],
+		end = months[months.length-1] == "999999" ? months[months.length-2] : months[months.length-1],
 		year = parseInt(start.substring(0,4)),
 		month = parseInt(start.substring(4,6)),
 		endY = parseInt(end.substring(0,4)),

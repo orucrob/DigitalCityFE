@@ -61,7 +61,7 @@ body{
 		}
 		.label1, .label2{
 			fill: white;
-			font: 10px sans-serif;
+			font: 9px sans-serif;
 			writing-mode: tb;
 		}
 		@media screen and (min-width: $break-large) {
@@ -76,7 +76,7 @@ body{
 			}
 		}
 		.month {
-			font: 10px sans-serif;
+//			font: 10px sans-serif;
 			text-anchor: middle;
 		}
 		&.selected{

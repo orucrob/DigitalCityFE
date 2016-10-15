@@ -13,7 +13,7 @@ export function remove(){
 	u.clearFromHash('m');
 }
 
-export function draw(data, idx, allBars){
+export function draw(data, idx, title){
 	//prepare data
 	let gridData = d3.nest()
 		    .key(function(d) { return d["DodavatelIco"]; })
@@ -32,15 +32,24 @@ export function draw(data, idx, allBars){
 
 	//basic html structure
 	let mvDiv = u.selectRoot('div','monthview')
+	//HEADER
+	let headerDiv = mvDiv.selectAll('div.header');
+	headerDiv = headerDiv.empty() ? mvDiv.append('div').attr('class','header') : headerDiv;
+	headerDiv.text(title || "");
+
+	//charts
+	let chartDiv = mvDiv.selectAll('div.charts');
+	chartDiv = chartDiv.empty() ? mvDiv.append('div').attr('class','charts') : chartDiv;
+
 	//PIE
-	let pieDiv = mvDiv.selectAll('div.pie');
-	pieDiv = pieDiv.empty() ? mvDiv.append('div').attr('class','pie') : pieDiv;
+	let pieDiv = chartDiv.selectAll('div.pie');
+	pieDiv = pieDiv.empty() ? chartDiv.append('div').attr('class','pie') : pieDiv;
 	let pieSvg = pieDiv.selectAll('svg.pie1');
 	pieSvg = pieSvg.empty() ? pieDiv.append('svg').attr('class','pie1') : pieSvg;
 
 	//GRID
-	let gridDiv = mvDiv.selectAll('div.grid');
-	gridDiv = gridDiv.empty() ? mvDiv.append('div').attr('class','grid') : gridDiv;
+	let gridDiv = chartDiv.selectAll('div.grid');
+	gridDiv = gridDiv.empty() ? chartDiv.append('div').attr('class','grid') : gridDiv;
 
 	let grid = gridDiv.selectAll('div.grid1');
 	grid = grid.empty() ? gridDiv.append('div').attr('class','grid1') : grid;
