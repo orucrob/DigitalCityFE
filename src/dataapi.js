@@ -51,7 +51,6 @@ export async function getFaDod(orgId,year){
 	return await ret;
 } 
 
-
 export async function getFaDodForYearChart(orgId, year){
 	let jsonData = await getFaDod(orgId, year);
 	if(jsonData){
@@ -91,6 +90,29 @@ export async function getFaDodForYearChart(orgId, year){
 		return {
 			data: data,
 			keys: keys,
+		};
+	}else{
+		console.log('No data.'); //TODO
+		return undefined;
+	}
+}
+export async function getFaDodForSupp(orgId, year, ico){
+	let data = await getFaDod(orgId, year);
+	if(data){
+		let sum = 0;
+	    data = data.filter(function(el, idx){
+	    	if(el["DodavatelIco"] == ico){
+	    		sum += parseInt(el["SumaCelkom"],10);
+	    		return true;
+	    	}else{
+	    		return false;
+	    	}
+	    });
+	    let kd = u.getKeydate();
+		data.sort(function(a, b){ return d3.ascending(a[kd], b[kd]);});
+		return {
+			data: data,
+			sum: sum
 		};
 	}else{
 		console.log('No data.'); //TODO

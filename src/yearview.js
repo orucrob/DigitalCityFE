@@ -196,7 +196,7 @@ async function drawChart(otag, year, month, chartData, force, withoutAnimation){
 		
 		if(force || currentState.o != otag || currentState.y!=year || currentState.m != month || currentState.keydate != keydate){
 	 		if(month && month>0 && month<=data.length){
-	 			mw.draw(data[month-1], month-1 , formatKey(keys[month-1]));
+	 			mw.draw(otag, year, data[month-1], formatKey(keys[month-1]));
 	 			//mark selected bar
 				d3.selectAll('svg.chart g.bar').classed('selected', function(d, i){return i==(month-1);});
 

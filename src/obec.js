@@ -110,6 +110,7 @@ export function drawTable(data){
 		d3.select(this).classed('selected', true);
 	});
 
+
 }
 
 export function removeAll(){

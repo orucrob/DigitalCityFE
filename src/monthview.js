@@ -3,6 +3,7 @@ import * as dataapi from './dataapi';
 import * as u from './util';
 import './css/monthview.scss';
 import * as obec from './obec';
+import * as sv from './suppview';
 
 
 const color = d3.scaleOrdinal(d3.schemeCategory20 );
@@ -10,10 +11,11 @@ const color = d3.scaleOrdinal(d3.schemeCategory20 );
 
 export function remove(){
 	d3.selectAll('div.monthview').remove();
+	sv.remove();
 	u.clearFromHash('m');
 }
 
-export function draw(data, idx, title){
+export function draw(otag, year, data, title){
 	//prepare data
 	let gridData = d3.nest()
 		    .key(function(d) { return d["DodavatelIco"]; })
@@ -24,6 +26,7 @@ export function draw(data, idx, title){
 			      		return parseFloat(g["SumaCelkom"]);
 			 			}),
 					name: dd[0]["DodavatelNazov"],
+					ico: dd[0]["DodavatelIco"],
 					count: dd.length,
 					detail: dd
 				};
@@ -33,8 +36,8 @@ export function draw(data, idx, title){
 	//basic html structure
 	let mvDiv = u.selectRoot('div','monthview')
 	//HEADER
-	let headerDiv = mvDiv.selectAll('div.header');
-	headerDiv = headerDiv.empty() ? mvDiv.append('div').attr('class','header') : headerDiv;
+	let headerDiv = mvDiv.selectAll('div.viewtitle');
+	headerDiv = headerDiv.empty() ? mvDiv.append('div').attr('class','viewtitle') : headerDiv;
 	headerDiv.text(title || "");
 
 	//charts
@@ -153,7 +156,13 @@ export function draw(data, idx, title){
 	newRow
 		.on('mouseover', pieOn)
 		.on('mouseout', pieOff)
-		.on('mousemove', movegrid);
+		.on('mousemove', movegrid)
+		.on('click', function(d){
+			sv.draw(otag, year, d.value.ico );
+		});
+	//draw of month will remove suppview
+	sv.remove();
+
 }
 function pieOn(d,i){
 	var c = d3.selectAll('svg.pie1 .hov .p'+i).classed('on', true).attr("fill");
@@ -183,7 +192,7 @@ function openGrid2(data){
 		grid2 = d3.select('body').append('div').attr('class','grid2');
 	}	
 
-	grid2.style("transform", "translate(" + (coo[0]+50) + "px," + coo[1] + "px)");;
+	grid2.style("transform", "translate(" + (coo[0]+50) + "px," + coo[1] + "px)");
 	//title
 	var title = grid2.selectAll('.rowtitle').data([1]);
 	title.enter().append('div').attr('class', 'rowtitle').attr('colspan',4).merge(title).text(gridData && gridData[0] && gridData[0]["DodavatelNazov"] || "??");

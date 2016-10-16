@@ -1,0 +1,77 @@
+@import "defs.scss";
+
+.suppview{
+	.viewtitle{
+		font-size: 1.8em;
+		font-variant: small-caps;
+		padding: 1em;
+		text-align: center;
+	}
+	.charts{
+		display: flex;
+		justify-content: center;
+		align-items: stretch;
+		flex-direction: column;
+		div.grid{
+			flex:1;
+	    	box-sizing: border-box;
+	    	text-align: center;
+			.grid1{
+				display: inline-block;
+		    	text-align: left;
+				.innergrid{
+					display: table;
+					font: 11px sans-serif;
+					border : 1px solid #607D8B;
+					box-sizing: border-box;
+					.row, .header{
+						display: table-row;
+						cursor: pointer;
+						div{
+							display: table-cell;
+						}
+						&.selected{
+							background-color: $color-active2;
+							color: white;
+						}
+						.subject{
+							padding-right: 1em;
+							padding-left: 1em;
+						}
+						.sum, .date, .no{
+							padding-right: 1em;
+							padding-left: 1em;
+							text-align: right;
+						}
+					}
+					.header > div{
+						font-weight: bold;
+						padding-top: 0.2em;
+						margin-top: 0.2em;
+						padding-bottom: 0.2em;
+						margin-bottom: 0.2em;
+						border-bottom: 1px solid #DDD;
+						font-variant: small-caps;
+					}
+				}
+			}
+		}
+	}
+}
+.spgriddetail {
+	position: absolute;
+	top:0;
+	left:0;
+	padding: 1em;
+	font: 11px sans-serif;
+	border : 1px solid white;
+	background: $color-base;
+	color: white;	
+	.rowtitle{
+		font-weight: bold;
+		padding-bottom: 0.5em;
+		padding-top: 0.5em;
+	}
+	.json{
+	}
+}
